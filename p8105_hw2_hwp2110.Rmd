@@ -1,0 +1,158 @@
+---
+title: "Homework 2"
+author: "Helen Peng / hwp2110" 
+output: github_document
+---
+
+# Problem 1
+
+```{r}
+library(tidyverse)
+
+transit_data = read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
+  janitor::clean_names() |> 
+  select("line", "station_name", "station_latitude", "station_longitude", starts_with("route"), "entry", "vending", "entrance_type", "ada") |> 
+  mutate(
+    entry = case_match(
+      entry,
+      "YES" ~ TRUE,
+      "NO" ~ FALSE
+      )
+  )
+  
+```
+
+The NYC Transit data contains information related to each entrance and exit for each subway station in NYC, including subway line, station name, geographic coordinates of station and entrance, routes served, whether entry is allowed, vending availability, entrance type, staffing, and ADA compliance. The data were cleaned by selecting the variables relevant to the analysis, and converting `entry` a character variable consisting of `YES` and `NO` into a logical variable consisting of `TRUE` and `FALSE`. The resulting dataset has `r ncol(transit_data)` columns and `r nrow(transit_data)` rows. The data is not tidy because there are mulitple variables representing routes served (e.g. `route1`, `route2`, `route3`). In tidy data, route would be represented as a single variable, with each row corresponding to a station-route combination. 
+
+
+```{r}
+
+num_distinct_station = transit_data |> 
+  distinct(line, station_name) |> 
+  nrow()
+
+num_ada_station = transit_data  |> 
+  filter(ada == TRUE) |> 
+  distinct(line, station_name) |> 
+  nrow()
+```
+
+There are `r num_distinct_station` stations and `r num_ada_station` are ADA compliant. 
+
+```{r}
+prop = transit_data |> 
+  filter(vending == "NO") |> 
+  summarize(
+    proportion = mean(entry, na.rm = TRUE)
+  )
+```
+
+`r round(prop,2)` of all station entrances / exits without vending allow entrance.
+
+```{r} 
+
+routes = transit_data |> 
+  mutate(
+    across(starts_with("route"), as.character)
+  ) |> 
+  pivot_longer(
+  starts_with("route"),
+  names_to = "route_number",
+  names_prefix = "route",
+  values_to = "route_name",
+  ) 
+
+a_station = routes |> 
+  filter(route_name == "A") |> 
+  distinct(line, station_name) |> nrow()
+
+a_station_ada = routes |> 
+  filter(route_name == "A", ada == TRUE) |> 
+  distinct(line, station_name) |> nrow()
+
+```
+
+There are a total of `r a_station` distinct stations that serve the A train, and of those stations `r a_station_ada` are ADA compliant. 
+
+# Problem 2
+```{r}
+mr_trash_wheel = readxl::read_excel("data/202509 Trash Wheel Collection Data.xlsx", 
+                                    sheet = "Mr. Trash Wheel",
+                                    range = "A2:N709",
+                                    na = c("", "NA")) |> 
+  janitor::clean_names() |> 
+  mutate(sports_balls = as.integer(sports_balls),
+         year = as.double(year),
+         name = "mr")
+
+professor_wheel = readxl::read_excel("data/202509 Trash Wheel Collection Data.xlsx", 
+                                    sheet = "Professor Trash Wheel",
+                                    range = "A2:M134",
+                                    na = c("", "NA")) |> 
+  janitor::clean_names() |> 
+  mutate(name = "professor")
+
+gwynnda_wheel = readxl::read_excel("data/202509 Trash Wheel Collection Data.xlsx", 
+                                    sheet = "Gwynns Falls Trash Wheel",
+                                    range = "A2:L351",
+                                    na = c("", "NA")) |> 
+  janitor::clean_names() |> 
+  mutate(name = "gwynnda") 
+
+trash_df = bind_rows(mr_trash_wheel, professor_wheel, gwynnda_wheel) |> relocate(name)
+
+trash_df |> filter(name == "professor") |> 
+  summarise(total_weight = sum(weight_tons, na.rm = TRUE))
+
+trash_df |> filter(name == "gwynnda", month == "June", year == 2022) |> 
+  summarise(total_cig = sum(cigarette_butts, na.rm = TRUE))
+```
+
+Thre resulting dataset has `r nrow(trash_df)` number of observations, with variables describing the trash collected by Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda Trash Wheel. Key variables include the date of collection, the total weight of trash in tons, and the counts of specific type of trash such as cigarette butts and sport balls. Professor Trash Wheel collected a total of 282.26 tons of trash across the available data, while Gwynnda collected 18120 cigarette butts in June 2022. 
+
+# Problem 3
+```{r}
+mci_baseline = read_csv("data/MCI_baseline.csv", skip = 1, na = c("","NA","."))|>
+  janitor::clean_names() |> 
+  mutate(sex = case_match(sex,
+                         1 ~ "male",
+                         0 ~ "female"),
+         apoe4 = case_match(apoe4,
+                            1 ~ TRUE,
+                            0 ~ FALSE)
+         )
+
+# age_at_onset will be missing if a subject remains MCI free during the follow-up period
+mci_baseline |> summarise(
+  avg_age = mean(current_age, na.rm = TRUE),
+  developed_mci = sum(!is.na(age_at_onset)),
+  total_participants = n()
+)
+
+mci_baseline |>
+  filter(sex == "female") |>
+  summarise(
+    proportion_apoe4 = mean(apoe4)
+  )
+```
+I imported the dataset with `skip = 1` because the first row in the file was the codebook, I also noticed how missing was in encoded with a `.` in some rows and so I fixed that in the importing process. Then I used `clean_names()` to standarize the variable names. The `sex` variable was recoded from numeric values to `male` and `female`, while `apoe4` was recoded as logical variable, all according to the codebook. After cleaning the dataset consist of the 483 participants and 6 variables (participant ID, baseline age, sex, education, APOE4 carrier status and age at MCI onset). Of the 483recruited participants, 97 developed MCI. The average baseline age is 65, and 0.3 of the women in the study are APOE4 carriers. 
+
+```{r}
+mci_amyloid = read_csv("data/mci_amyloid.csv", skip = 1, na = c("","NA","Na")) |>
+  janitor::clean_names()
+```
+
+Similarly, I imported the dataset with `skip = 1` because the first row in the file was the codebook, and fixed the encoding of missing values. Then I used `clean_names()` to standarize the variable names. After cleaning, the resulting dataset has 487 rows and 6 columns (study_id, baseline, time_2, time_4, time_6, and time_8). 
+
+```{r}
+combined_df = mci_baseline |> 
+  inner_join(mci_amyloid, by = c("id" = "study_id"))
+
+mci_baseline |> filter(!id %in% (mci_amyloid |> pull(study_id))) 
+mci_amyloid |> filter(!study_id %in% (mci_baseline |> pull(id)))
+
+write_csv(combined_df, "data/mci_combined.csv")
+```
+
+There are some participants that appear in only the baseline or amyloid datasets. In fact, there are 8 participants in the baseline dataset that's not in the amyloid dataset, and 12 participants in the amyloid dataset who are not in the baseline dataset. 
+The resulting dataset combining only participants who appear in both datasets consist of 475 participants and now has all 11 variables (id, current_age, sex, education, apoe4, age_at_onset, baseline, time_2, time_4, time_6, and time_8). 
