@@ -9,7 +9,7 @@ output: github_document
 ```{r}
 library(tidyverse)
 
-transit_data = read_csv("data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
+transit_data = read_csv("./data/NYC_Transit_Subway_Entrance_And_Exit_Data.csv") |> 
   janitor::clean_names() |> 
   select("line", "station_name", "station_latitude", "station_longitude", starts_with("route"), "entry", "vending", "entrance_type", "ada") |> 
   mutate(
@@ -76,25 +76,25 @@ There are a total of `r a_station` distinct stations that serve the A train, and
 
 # Problem 2
 ```{r}
-mr_trash_wheel = readxl::read_excel("data/202509 Trash Wheel Collection Data.xlsx", 
+mr_trash_wheel = readxl::read_excel("data/202610 Trash Wheel Collection Data.xlsx", 
                                     sheet = "Mr. Trash Wheel",
-                                    range = "A2:N709",
+                                    range = "A2:N742",
                                     na = c("", "NA")) |> 
   janitor::clean_names() |> 
   mutate(sports_balls = as.integer(sports_balls),
          year = as.double(year),
          name = "mr")
 
-professor_wheel = readxl::read_excel("data/202509 Trash Wheel Collection Data.xlsx", 
+professor_wheel = readxl::read_excel("data/202610 Trash Wheel Collection Data.xlsx", 
                                     sheet = "Professor Trash Wheel",
-                                    range = "A2:M134",
-                                    na = c("", "NA")) |> 
+                                    range = "A2:M139",
+                                    na = c("", "NA", "dive")) |> 
   janitor::clean_names() |> 
   mutate(name = "professor")
 
-gwynnda_wheel = readxl::read_excel("data/202509 Trash Wheel Collection Data.xlsx", 
-                                    sheet = "Gwynns Falls Trash Wheel",
-                                    range = "A2:L351",
+gwynnda_wheel = readxl::read_excel("data/202610 Trash Wheel Collection Data.xlsx", 
+                                    sheet = 4,
+                                    range = "A2:L394",
                                     na = c("", "NA")) |> 
   janitor::clean_names() |> 
   mutate(name = "gwynnda") 
@@ -108,7 +108,7 @@ trash_df |> filter(name == "gwynnda", month == "June", year == 2022) |>
   summarise(total_cig = sum(cigarette_butts, na.rm = TRUE))
 ```
 
-Thre resulting dataset has `r nrow(trash_df)` number of observations, with variables describing the trash collected by Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda Trash Wheel. Key variables include the date of collection, the total weight of trash in tons, and the counts of specific type of trash such as cigarette butts and sport balls. Professor Trash Wheel collected a total of 282.26 tons of trash across the available data, while Gwynnda collected 18120 cigarette butts in June 2022. 
+Thre resulting dataset has `r nrow(trash_df)` number of observations, with variables describing the trash collected by Mr. Trash Wheel, Professor Trash Wheel, and Gwynnda Trash Wheel. Key variables include the date of collection, the total weight of trash in tons, and the counts of specific type of trash such as cigarette butts and sport balls. Professor Trash Wheel collected a total of 294.96 tons of trash across the available data, while Gwynnda collected 18120 cigarette butts in June 2022. 
 
 # Problem 3
 ```{r}
